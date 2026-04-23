@@ -23,7 +23,7 @@ class Settings:
     open_router_model: str = os.getenv('OPEN_ROUTER_MODEL', 'google/gemma-4-26b-a4b-it:free')
     open_router_fallback_models: str = os.getenv(
         'OPEN_ROUTER_FALLBACK_MODELS',
-        'meta-llama/llama-3.3-70b-instruct:free,mistralai/mistral-small-3.2-24b-instruct:free',
+        'openrouter/free,google/gemma-4-26b-a4b-it:free,google/gemma-3-27b-it:free,meta-llama/llama-3.3-70b-instruct:free',
     )
     app_url: str = os.getenv('APP_URL', 'https://portfolio-cli.netlify.app')
     app_name: str = os.getenv('APP_NAME', 'Portfolio CLI')
