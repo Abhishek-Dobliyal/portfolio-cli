@@ -2,7 +2,7 @@ import json
 
 import httpx
 
-from config import settings
+from config import APP_NAME, APP_URL, CHAT_MAX_HISTORY_MESSAGES, OPEN_ROUTER_URL, settings
 from llm.context import SYSTEM_PROMPT
 
 
@@ -27,7 +27,7 @@ def _trim_history(history):
     if not history:
         return []
 
-    trimmed_history = history[-settings.chat_max_history_messages:]
+    trimmed_history = history[-CHAT_MAX_HISTORY_MESSAGES:]
     return [
         {'role': message.role, 'content': message.content}
         for message in trimmed_history
@@ -48,7 +48,7 @@ def build_error_event(message):
 
 
 async def _stream_model_completion(client, headers, payload):
-    async with client.stream('POST', settings.open_router_url, headers=headers, json=payload) as response:
+    async with client.stream('POST', OPEN_ROUTER_URL, headers=headers, json=payload) as response:
         if response.status_code == 429:
             error_body = await response.aread()
             raise OpenRouterRateLimitError(
@@ -72,8 +72,8 @@ async def stream_chat_completion(message, history):
     headers = {
         'Authorization': f'Bearer {settings.open_router_key}',
         'Content-Type': 'application/json',
-        'HTTP-Referer': settings.app_url,
-        'X-Title': settings.app_name,
+        'HTTP-Referer': APP_URL,
+        'X-Title': APP_NAME,
     }
     messages = build_messages(message, history)
     timeout = httpx.Timeout(connect=10.0, read=None, write=30.0, pool=10.0)

@@ -1,8 +1,10 @@
 import time
 from datetime import datetime
+from urllib.parse import urlsplit
+
 from bson import ObjectId
 
-from config import settings
+from config import CHAT_RATE_LIMIT_COUNT, CHAT_RATE_LIMIT_WINDOW_SECONDS, STATS_DOCUMENT_ID, settings
 from database.database import Database
 from llm.openrouter import (
     OpenRouterConfigurationError,
@@ -65,14 +67,14 @@ def _get_client_ip(request: Request):
 def _enforce_chat_rate_limit(request: Request):
     client_ip = _get_client_ip(request)
     now = time.time()
-    cutoff = now - settings.chat_rate_limit_window_seconds
+    cutoff = now - CHAT_RATE_LIMIT_WINDOW_SECONDS
     recent_requests = [
         timestamp
         for timestamp in chat_request_log.get(client_ip, [])
         if timestamp >= cutoff
     ]
 
-    if len(recent_requests) >= settings.chat_rate_limit_count:
+    if len(recent_requests) >= CHAT_RATE_LIMIT_COUNT:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail='Chat rate limit reached. Please try again later.',
@@ -80,6 +82,37 @@ def _enforce_chat_rate_limit(request: Request):
 
     recent_requests.append(now)
     chat_request_log[client_ip] = recent_requests
+
+
+def _extract_origin(url):
+    if not url:
+        return None
+
+    parsed_url = urlsplit(url)
+    if not parsed_url.scheme or not parsed_url.netloc:
+        return None
+
+    return f'{parsed_url.scheme}://{parsed_url.netloc}'
+
+
+def _require_allowed_origin(request: Request):
+    allowed_origin = settings.get_frontend_origin()
+    request_origin = _extract_origin(request.headers.get('origin'))
+    request_referer_origin = _extract_origin(request.headers.get('referer'))
+
+    if request_origin == allowed_origin or request_referer_origin == allowed_origin:
+        return
+
+    custom_logger.warning(
+        'blocked request from disallowed origin: '
+        f'origin={request.headers.get("origin")!r} '
+        f'referer={request.headers.get("referer")!r} '
+        f'ip={_get_client_ip(request)}'
+    )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail='Request origin is not allowed.',
+    )
 
 
 @router.get("/get-stats", response_model=GetResponseModel)
@@ -101,12 +134,14 @@ async def get_stats():
 
 
 @router.post("/update-stats", response_model=UpdateResponseModel)
-async def update_stats(stats: UpdateVisitorStats):
+async def update_stats(request: Request, stats: UpdateVisitorStats):
+    _require_allowed_origin(request)
+
     stats_dict = stats.dict()
     stats_dict["avg_session_seconds"] = _normalize_avg_session_seconds(stats_dict)
 
     try:
-        stats_document_id = ObjectId(settings.stats_document_id)
+        stats_document_id = ObjectId(STATS_DOCUMENT_ID)
     except Exception:
         custom_logger.error("invalid STATS_DOCUMENT_ID configuration")
         return UpdateResponseModel(
@@ -134,6 +169,7 @@ async def update_stats(stats: UpdateVisitorStats):
 
 @router.post('/chat')
 async def chat(request: Request, payload: ChatRequest):
+    _require_allowed_origin(request)
     _enforce_chat_rate_limit(request)
 
     async def event_stream():

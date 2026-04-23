@@ -1,4 +1,4 @@
-from config import settings
+from config import COLLECTION_NAME, DATABASE_NAME, settings
 from log.logger import Logger
 from pymongo.mongo_client import MongoClient
 from pymongo import errors
@@ -7,10 +7,10 @@ from pymongo import errors
 class Database:
     def __init__(self, uri=None, database_name=None, collection_name=None):
         self.mongo_uri = uri if uri else settings.build_mongo_uri()
-        self.database_name = database_name if database_name else settings.database_name
+        self.database_name = database_name if database_name else DATABASE_NAME
         self._logger = Logger(__name__).get_logger()
         self._client = self._db = None
-        self.collection_name = collection_name if collection_name else settings.collection_name
+        self.collection_name = collection_name if collection_name else COLLECTION_NAME
 
         self._connect()
 

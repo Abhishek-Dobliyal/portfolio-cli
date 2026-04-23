@@ -18,7 +18,7 @@ def create_app():
     app.include_router(router=router)
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=settings.allow_origin_regex,
+        allow_origins=[settings.get_frontend_origin()],
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
