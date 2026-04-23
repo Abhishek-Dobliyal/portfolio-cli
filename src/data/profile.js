@@ -121,13 +121,13 @@ export const timelineData = [
 
 export const skillBars = [
     { domain: 'Backend',          pct: 70, skills: ['Python', 'Go', 'FastAPI', 'Flask', 'GoFiber', 'REST APIs'] },
-    { domain: 'Frontend',         pct: 60, skills: ['HTML/CSS', 'JavaScript', 'Vue.js', 'Tailwind', 'Bootstrap'] },
-    { domain: 'Data Engineering', pct: 65, skills: ['Apache Spark', 'PySpark', 'MySQL', 'MongoDB', 'Airflow'] },
+    { domain: 'Frontend',         pct: 65, skills: ['HTML/CSS', 'JavaScript', 'Vue.js', 'Tailwind', 'Bootstrap'] },
+    { domain: 'Data Engineering', pct: 60, skills: ['Apache Spark', 'PySpark', 'MySQL', 'MongoDB', 'Airflow'] },
 ]
 
 export const statsConfig = [
     { label: 'Years of Experience', value: 3,  hasSuffix: true  },
-    { label: 'Companies',           value: 4,  hasSuffix: false },
+    { label: 'Companies',           value: 3,  hasSuffix: true  },
     { label: 'Projects Built',      value: 10, hasSuffix: true  },
 ]
 

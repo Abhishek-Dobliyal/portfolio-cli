@@ -130,8 +130,8 @@ const FALLBACKS = {
     },
     github: {
         username: 'Abhishek-Dobliyal',
-        followers: '9',
-        repositories: '30+',
+        followers: 'N/A',
+        repositories: 'N/A',
     },
     chess: { rating: 'N/A', tactics: 'N/A', league: 'N/A' },
 }

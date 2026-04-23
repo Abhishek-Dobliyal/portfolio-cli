@@ -2,8 +2,8 @@
     <div class="space-y-3">
         <p class="text-accent font-bold mb-2">[ Career Stats ]</p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div v-for="stat in counters" :key="stat.label" class="text-center">
+        <div class="flex flex-wrap justify-center gap-8 sm:gap-14">
+            <div v-for="stat in counters" :key="stat.label" class="w-24 sm:w-32 text-center">
                 <div class="text-2xl sm:text-3xl font-bold text-accent">
                     {{ stat.display }}
                 </div>
