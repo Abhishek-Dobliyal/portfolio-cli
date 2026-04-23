@@ -202,14 +202,14 @@ $8⠀⠀⠃⢸⣿⡇⠀⢠⣾⡇⢸⡇⠀⠀⠀⡞
 $9⠀⠀⠀⠈⢿⡇⡰⠋⠈⠙⠂⠙⠢
 $9⠀⠀⠀⠀⠈⢧
 
-      █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
-      █
-      █    Abhishek Dobliyal
-      █    Software Engineer
-      █
-      █   Portfolio CLI v1.0.0
-      █
-      █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
+      +-----------------------------+
+      |
+      |    Abhishek Dobliyal
+      |    Software Engineer
+      |
+      |    Portfolio CLI v1.0.0
+      |
+      +-----------------------------+
 `
 
 const cmdSuggestions = computed(() => {
