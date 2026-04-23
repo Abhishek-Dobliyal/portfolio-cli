@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import Optional
-from urllib.parse import urlsplit
+from urllib.parse import quote_plus, urlsplit
 
 from dotenv import load_dotenv
 
@@ -41,6 +41,15 @@ class Settings:
         parsed_url = urlsplit(APP_URL)
         return f'{parsed_url.scheme}://{parsed_url.netloc}'
 
+    def get_mongo_config_mode(self):
+        if self.mongo_uri:
+            if all(token in self.mongo_uri for token in ('{username}', '{password}', '{host}', '{options}')):
+                return 'templated_mongo_uri'
+
+            return 'direct_mongo_uri'
+
+        return 'split_mongo_fields'
+
     def build_mongo_uri(self):
         if self.mongo_uri:
             if all(token in self.mongo_uri for token in ('{username}', '{password}', '{host}', '{options}')):
@@ -52,10 +61,10 @@ class Settings:
                 ]
                 if all(required_parts):
                     return self.mongo_uri.format(
-                        username=self.mongo_username,
-                        password=self.mongo_password,
+                        username=quote_plus(self.mongo_username),
+                        password=quote_plus(self.mongo_password),
                         host=self.mongo_host,
-                        options=self.mongo_options,
+                        options=quote_plus(self.mongo_options),
                     )
 
             return self.mongo_uri
@@ -70,10 +79,10 @@ class Settings:
             return None
 
         return MONGO_URI_TEMPLATE.format(
-            username=self.mongo_username,
-            password=self.mongo_password,
+            username=quote_plus(self.mongo_username),
+            password=quote_plus(self.mongo_password),
             host=self.mongo_host,
-            options=self.mongo_options,
+            options=quote_plus(self.mongo_options),
         )
 
 

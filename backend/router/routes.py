@@ -27,11 +27,14 @@ chat_request_log = {}
 def initialize_database():
     global db
 
+    custom_logger.info(f'initializing database using {settings.get_mongo_config_mode()}')
+
     database = Database()
     db = database if database.is_connected() else None
 
     if db is None:
         custom_logger.error('database initialization failed')
+        raise RuntimeError('database initialization failed')
 
 
 def _current_utc_date():

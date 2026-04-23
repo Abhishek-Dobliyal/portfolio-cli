@@ -10,8 +10,10 @@ from router.routes import close_database, initialize_database, router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     initialize_database()
-    yield
-    close_database()
+    try:
+        yield
+    finally:
+        close_database()
 
 
 def create_app():
