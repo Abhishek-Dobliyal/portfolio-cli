@@ -43,6 +43,21 @@ class Settings:
 
     def build_mongo_uri(self):
         if self.mongo_uri:
+            if all(token in self.mongo_uri for token in ('{username}', '{password}', '{host}', '{options}')):
+                required_parts = [
+                    self.mongo_username,
+                    self.mongo_password,
+                    self.mongo_host,
+                    self.mongo_options,
+                ]
+                if all(required_parts):
+                    return self.mongo_uri.format(
+                        username=self.mongo_username,
+                        password=self.mongo_password,
+                        host=self.mongo_host,
+                        options=self.mongo_options,
+                    )
+
             return self.mongo_uri
 
         required_parts = [
