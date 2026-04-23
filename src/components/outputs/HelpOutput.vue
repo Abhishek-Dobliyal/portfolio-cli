@@ -31,6 +31,10 @@
             visitor statistics
         </p>
         <p>
+            <span class="text-accent">/chat</span>
+            <span class="text-term-text-dim text-xs">· ask</span> - Ask the portfolio assistant
+        </p>
+        <p>
             <span class="text-accent">/contact</span>
             <span class="text-term-text-dim text-xs">· ping</span> - Get in
             touch

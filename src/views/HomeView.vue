@@ -89,15 +89,6 @@
                 >{{ cmd }}</span>
             </div>
 
-            <div class="term-hints flex flex-wrap gap-2 text-xs text-term-text-dim pb-2">
-                <span class="text-term-text-dim">Commands:</span>
-                <span
-                    v-for="cmd in availableCommands"
-                    :key="cmd"
-                    class="cursor-pointer hover:text-term-accent transition-colors"
-                    @click="currentInput = cmd"
-                >{{ cmd }}</span>
-            </div>
         </main>
 
         <footer class="terminal-footer flex items-center justify-between px-3 sm:px-4 py-2 border-t border-term-border text-xs text-term-text-dim bg-term-bg">
@@ -138,6 +129,7 @@ import GlitchOutput   from '@/components/outputs/GlitchOutput.vue'
 import StatsOutput    from '@/components/outputs/StatsOutput.vue'
 import ProfilesOutput from '@/components/outputs/ProfilesOutput.vue'
 import SiteOutput     from '@/components/outputs/SiteOutput.vue'
+import ChatOutput     from '@/components/outputs/ChatOutput.vue'
 import WhoisOutput    from '@/components/outputs/WhoisOutput.vue'
 import UnknownOutput  from '@/components/outputs/UnknownOutput.vue'
 
@@ -156,6 +148,7 @@ const currentTime    = ref('')
 const emptyHint      = ref(true)
 const MAX_SUGGESTIONS = 3
 const CLOCK_INTERVAL_MS = 1000
+const CHAT_URL = 'https://portfolio-backend.koyeb.app/chat'
 let clockTimerId = null
 
 const visitorId = ref(createVisitorId())
@@ -177,6 +170,7 @@ const outputComponents = {
     stats: StatsOutput,
     profiles: ProfilesOutput,
     site: SiteOutput,
+    chat: ChatOutput,
     whois: WhoisOutput,
     unknown: UnknownOutput,
 }
@@ -235,6 +229,23 @@ const COMMAND_HANDLERS = {
     '/warp':     () => { particleBgRef.value?.warp(); return { type: 'warp' } },
     '/dna':      () => { particleBgRef.value?.dna();  return { type: 'dna' } },
     '/site':     () => ({ type: 'site' }),
+    '/chat':     (args) => {
+        if (!args) {
+            return { type: 'chat', mode: 'usage', status: 'idle', response: '', error: '' }
+        }
+
+        const entry = {
+            type: 'chat',
+            mode: 'stream',
+            prompt: args,
+            response: '',
+            status: 'streaming',
+            error: '',
+        }
+
+        void streamChatReply(entry, getChatRequestHistory())
+        return entry
+    },
     '/resume':   () => { window.open(RESUME_URL, '_blank', 'noopener,noreferrer'); return { type: 'resume' } },
     '/clear':    () => { history.value = []; currentInput.value = ''; return null },
 }
@@ -254,6 +265,20 @@ function getNormalizedCommand(rawCommand) {
     return ALIASES[trimmedCommand] ?? ALIASES[prefixedCommand] ?? prefixedCommand
 }
 
+function parseCommandInput(rawCommand) {
+    const trimmedCommand = rawCommand.trim()
+    if (!trimmedCommand) return null
+
+    const [commandToken] = trimmedCommand.split(/\s+/, 1)
+    const args = trimmedCommand.slice(commandToken.length).trim()
+
+    return {
+        raw: trimmedCommand,
+        args,
+        normalizedCommand: getNormalizedCommand(commandToken),
+    }
+}
+
 function updateShareableUrl(command) {
     const url = new URL(window.location.href)
 
@@ -270,13 +295,13 @@ function runSharedCommandFromUrl() {
     const sharedCommand = new URLSearchParams(window.location.search).get('cmd')
     if (!sharedCommand) return
 
-    const normalizedCommand = getNormalizedCommand(sharedCommand)
-    if (!normalizedCommand || !COMMAND_HANDLERS[normalizedCommand]) {
+    const parsedCommand = parseCommandInput(sharedCommand)
+    if (!parsedCommand || !COMMAND_HANDLERS[parsedCommand.normalizedCommand]) {
         updateShareableUrl(null)
         return
     }
 
-    currentInput.value = normalizedCommand
+    currentInput.value = sharedCommand
     executeCommand()
 }
 
@@ -307,6 +332,15 @@ function getOutputProps(entry) {
         }
     }
 
+    if (entry.type === 'chat') {
+        return {
+            mode: entry.mode,
+            status: entry.status,
+            response: entry.response,
+            error: entry.error,
+        }
+    }
+
     if (entry.type === 'unknown') {
         return {
             command: entry.command,
@@ -328,15 +362,121 @@ function getCommandSuggestions(command) {
         .slice(0, MAX_SUGGESTIONS)
 }
 
-function pushHistoryEntry(command, type, suggestions = []) {
-    history.value.push({ command, type, hasOutput: true, suggestions })
+function pushHistoryEntry(command, entry) {
+    entry.command = command
+    entry.hasOutput = true
+    entry.suggestions ??= []
+    history.value.push(entry)
+}
+
+function getChatRequestHistory() {
+    return history.value.flatMap((entry) => {
+        if (entry.type !== 'chat' || entry.mode !== 'stream' || entry.status !== 'done') {
+            return []
+        }
+
+        return [
+            { role: 'user', content: entry.prompt },
+            { role: 'assistant', content: entry.response.trim() },
+        ]
+    })
+}
+
+function processChatEvent(eventBlock, entry) {
+    const dataLines = eventBlock
+        .split('\n')
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).trim())
+        .filter(Boolean)
+
+    for (const line of dataLines) {
+        if (line === '[DONE]') {
+            return true
+        }
+
+        const payload = JSON.parse(line)
+        if (payload.error) {
+            entry.status = 'error'
+            entry.error = payload.error
+            return true
+        }
+
+        const content = payload.choices?.[0]?.delta?.content
+        if (content) {
+            entry.response += content
+        }
+    }
+
+    return false
+}
+
+async function streamChatReply(entry, priorHistory) {
+    try {
+        const response = await fetch(CHAT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: entry.prompt,
+                history: priorHistory,
+            }),
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+        }
+
+        if (!response.body) {
+            throw new Error('Missing response stream')
+        }
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+            const { value, done } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+            const eventBlocks = buffer.split('\n\n')
+            buffer = eventBlocks.pop() ?? ''
+
+            for (const eventBlock of eventBlocks) {
+                const shouldStop = processChatEvent(eventBlock, entry)
+                if (shouldStop) {
+                    if (entry.status !== 'error') {
+                        entry.status = 'done'
+                    }
+
+                    scrollToBottom('auto')
+                    return
+                }
+            }
+
+            scrollToBottom('auto')
+        }
+
+        if (buffer.trim()) {
+            processChatEvent(buffer, entry)
+        }
+
+        if (entry.status !== 'error') {
+            entry.status = 'done'
+        }
+    } catch (error) {
+        entry.status = 'error'
+        entry.error = 'Chat is unavailable right now. Try again shortly or use /contact.'
+        console.warn('[chat] request failed:', error)
+    } finally {
+        scrollToBottom('auto')
+    }
 }
 
 function executeCommand() {
-    const raw = currentInput.value.trim()
-    if (!raw) return
+    const parsedCommand = parseCommandInput(currentInput.value)
+    if (!parsedCommand) return
 
-    const normalizedCommand = getNormalizedCommand(raw)
+    const { raw, args, normalizedCommand } = parsedCommand
 
     commandHistory.value.push(raw)
     historyIndex.value = -1
@@ -344,7 +484,10 @@ function executeCommand() {
     const handler = COMMAND_HANDLERS[normalizedCommand]
 
     if (!handler) {
-        pushHistoryEntry(raw, 'unknown', getCommandSuggestions(raw))
+        pushHistoryEntry(raw, {
+            type: 'unknown',
+            suggestions: getCommandSuggestions(raw),
+        })
         currentInput.value = ''
         commandsRun.value++
         updateShareableUrl(null)
@@ -352,27 +495,27 @@ function executeCommand() {
         return
     }
 
-    const result = handler()
+    const result = handler(args)
     if (result === null) {
         updateShareableUrl(null)
         return
     }
 
     commandsRun.value++
-    pushHistoryEntry(raw, result.type)
+    pushHistoryEntry(raw, result)
     currentInput.value = ''
-    updateShareableUrl(normalizedCommand)
+    updateShareableUrl(normalizedCommand === '/chat' ? null : normalizedCommand)
     scrollToBottom()
 }
 
-function scrollToBottom() {
+function scrollToBottom(behavior = 'smooth') {
     nextTick(() => {
         if (terminalBody.value) {
-            terminalBody.value.scrollTo({ top: terminalBody.value.scrollHeight, behavior: 'smooth' })
+            terminalBody.value.scrollTo({ top: terminalBody.value.scrollHeight, behavior })
             return
         }
 
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior })
     })
 }
 

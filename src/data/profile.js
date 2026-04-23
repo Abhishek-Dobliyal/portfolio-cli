@@ -133,12 +133,13 @@ export const statsConfig = [
 
 export const availableCommands = [
     '/about', '/skills', '/projects', '/timeline',
-    '/contact', '/links', '/resume', '/help', '/clear',
+    '/contact', '/links', '/resume', '/help', '/clear', '/chat',
     '/stats', '/profiles', '/whois', '/glitch', '/warp', '/dna', '/site',
 ]
 
 export const ALIASES = {
     site:     '/site',
+    chat:     '/chat',
     about:    '/about',
     skills:   '/skills',
     projects: '/projects',
@@ -165,4 +166,5 @@ export const ALIASES = {
     neofetch: '/stats',
     handles:  '/profiles',
     uptime:   '/site',
+    ask:      '/chat',
 }
