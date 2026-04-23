@@ -61,8 +61,8 @@ class Settings:
                 ]
                 if all(required_parts):
                     return self.mongo_uri.format(
-                        username=quote_plus(self.mongo_username),
-                        password=quote_plus(self.mongo_password),
+                        username=self.mongo_username,
+                        password=self.mongo_password,
                         host=self.mongo_host,
                         options=self.mongo_options,
                     )
