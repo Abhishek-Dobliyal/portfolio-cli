@@ -64,7 +64,7 @@ class Settings:
                         username=quote_plus(self.mongo_username),
                         password=quote_plus(self.mongo_password),
                         host=self.mongo_host,
-                        options=quote_plus(self.mongo_options),
+                        options=self.mongo_options,
                     )
 
             return self.mongo_uri
@@ -82,7 +82,7 @@ class Settings:
             username=quote_plus(self.mongo_username),
             password=quote_plus(self.mongo_password),
             host=self.mongo_host,
-            options=quote_plus(self.mongo_options),
+            options=self.mongo_options,
         )
 
 
