@@ -1,16 +1,14 @@
-from datetime import datetime
-from typing import Dict, List
-from bson import ObjectId
+from typing import Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class MaxVisits(BaseModel):
     cnt: int = 0
     date: str
 
-    
-class VisitorStats(BaseModel):
+
+class VisitorStatsBase(BaseModel):
     visitors_cnt: int
     tab_stats: Dict[str, int]
     max_visits: MaxVisits
@@ -19,19 +17,18 @@ class VisitorStats(BaseModel):
     avg_session_seconds: float
 
 
-class UpdateVisitorStats(BaseModel):
-    visitors_cnt: int
-    tab_stats: Dict[str, int]
-    max_visits: MaxVisits
-    current_day_cnt: Dict[str, int]
-    connect_attempt_cnt: int
-    avg_session_seconds: float
+class VisitorStats(VisitorStatsBase):
+    pass
+
+
+class UpdateVisitorStats(VisitorStatsBase):
+    pass
 
 
 class GetResponseModel(BaseModel):
     status_code: int
     message: str
-    data: VisitorStats = {}
+    data: Optional[VisitorStats] = None
 
 
 class UpdateResponseModel(BaseModel):

@@ -1,62 +1,73 @@
-import os
-
+from config import settings
 from log.logger import Logger
-
-from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo import errors
-
-load_dotenv()
-
-MONGO_URI_TEMPLATE = os.getenv('MONGO_URI')
-MONGO_USERNAME = os.getenv('MONGO_USERNAME')
-MONGO_PASSWORD = os.getenv('MONGO_PASSWORD')
-MONGO_HOST = os.getenv('MONGO_HOST')
-MONGO_OPTIONS = os.getenv('MONGO_OPTIONS')
-MONGO_URI = MONGO_URI_TEMPLATE.format(
-    username=MONGO_USERNAME,
-    password=MONGO_PASSWORD,
-    host=MONGO_HOST,
-    options=MONGO_OPTIONS
-)
-DATABASE_NAME = "portfolio-analytics"
-COLLECTION_NAME = "analytics"
 
 
 class Database:
     def __init__(self, uri=None, database_name=None, collection_name=None):
-        self.mongo_uri = uri if uri else MONGO_URI
-        self.database_name = database_name if database_name else DATABASE_NAME
+        self.mongo_uri = uri if uri else settings.build_mongo_uri()
+        self.database_name = database_name if database_name else settings.database_name
         self._logger = Logger(__name__).get_logger()
         self._client = self._db = None
-        self.collection_name = collection_name if collection_name else COLLECTION_NAME
-        
+        self.collection_name = collection_name if collection_name else settings.collection_name
+
         self._connect()
+
+    def _is_connected(self):
+        return self._db is not None
+
+    def _get_collection_name(self, collection_name=None):
+        return collection_name if collection_name else self.collection_name
+
+    def _get_collection(self, collection_name=None):
+        if not self._is_connected():
+            self._logger.error("database connection is not available")
+            return None
+
+        return self._db[self._get_collection_name(collection_name)]
 
     def _connect(self):
         """ Connects to MongoDB  """
+        if not self.mongo_uri:
+            self._logger.error("missing MongoDB configuration in environment")
+            return
+
         try:            
-            self._client = MongoClient(self.mongo_uri)
+            self._client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+            self._client.admin.command('ping')
             self._db = self._client[self.database_name]
             self._logger.info(f"successfully connected to the {self.database_name} database")
         except errors.ConnectionFailure as e:
             self._logger.error(f"connection to MongoDB failed: {str(e)}")
+            self._client = None
+            self._db = None
         except Exception as e:
             self._logger.error(f"error occurred while connecting to the database: {str(e)}")
+            self._client = None
+            self._db = None
 
     def find_one(self, collection_name=None, **query):
         """ Finds documents in the collection based on a query. """
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return None
+
         try: 
-            document = self._db[collection_name if collection_name else self.collection_name].find_one(**query)
+            document = collection.find_one(**query)
             return document
         except Exception as e:
             self._logger.error(f"An error occurred while finding documents: {str(e)}")
-            return []
+            return None
 
     def insert_document(self, document, collection_name=None):
         """ Inserts a document into the collection. """
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return None
+
         try:
-            result = self._db[collection_name if collection_name else self.collection_name].insert_one(document)
+            result = collection.insert_one(document)
             self._logger.info(f"inserted document with id: {result.inserted_id}")
             return result.inserted_id
         except Exception as e:
@@ -67,7 +78,10 @@ class Database:
                         collection_name=None, 
                         multiple=False):
         """ Updates documents in the collection based on a query. """
-        collection = self._db[collection_name if collection_name else self.collection_name]
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return None
+
         try:
             if multiple:
                 result = collection.update_many(query, update)

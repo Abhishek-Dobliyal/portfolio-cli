@@ -1,13 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from router.routes import router
+from config import settings
+from router.routes import close_database, router
 
-app = FastAPI()
-app.include_router(router=router)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origin_regex="https:\/\/.*\.netlify\.app",
-    allow_credentials=True, 
-    allow_methods=["GET", "POST"]
-)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    close_database()
+
+
+def create_app():
+    app = FastAPI(lifespan=lifespan)
+    app.include_router(router=router)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=settings.allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+    )
+    return app
+
+
+app = create_app()
