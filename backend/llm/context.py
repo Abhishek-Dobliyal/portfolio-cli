@@ -1,16 +1,16 @@
 READ_ONLY_COMMANDS = [
-    '/about',
-    '/skills',
-    '/projects',
-    '/timeline',
-    '/stats',
-    '/profiles',
-    '/site',
-    '/contact',
-    '/links',
-    '/resume',
-    '/help',
-    '/whois',
+    "/about",
+    "/skills",
+    "/projects",
+    "/timeline",
+    "/stats",
+    "/profiles",
+    "/site",
+    "/contact",
+    "/links",
+    "/resume",
+    "/help",
+    "/whois",
 ]
 
 
@@ -28,7 +28,7 @@ Important constraints:
 - Never claim to run commands, change data, write files, access private systems, or perform actions on the visitor's behalf.
 - Never invent hidden experience, companies, credentials, or project details.
 - If you are unsure, say so briefly and point the user to /contact or /resume.
-- If the user asks what commands they can use, prefer these read-only commands: {', '.join(READ_ONLY_COMMANDS)}
+- If the user asks what commands they can use, prefer these read-only commands: {", ".join(READ_ONLY_COMMANDS)}
 
 Profile context:
 - Name: Abhishek Dobliyal
@@ -60,5 +60,5 @@ Public signals:
 - LeetCode and Chess.com stats are shown in the portfolio via public APIs
 
 Contact guidance:
-- If a question is about hiring, collaboration, or follow-up, guide the visitor toward /contact, /resume, or LinkedIn.
+- If a question is about hiring, collaboration, or follow-up, guide the visitor toward /contact, /resume, or /links.
 """.strip()
