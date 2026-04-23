@@ -27,6 +27,7 @@ OPEN_ROUTER_MODELS = (
 
 @dataclass(frozen=True)
 class Settings:
+    mongo_uri: Optional[str] = os.getenv('MONGO_URI')
     mongo_username: Optional[str] = os.getenv('MONGO_USERNAME')
     mongo_password: Optional[str] = os.getenv('MONGO_PASSWORD')
     mongo_host: Optional[str] = os.getenv('MONGO_HOST')
@@ -41,6 +42,9 @@ class Settings:
         return f'{parsed_url.scheme}://{parsed_url.netloc}'
 
     def build_mongo_uri(self):
+        if self.mongo_uri:
+            return self.mongo_uri
+
         required_parts = [
             self.mongo_username,
             self.mongo_password,
