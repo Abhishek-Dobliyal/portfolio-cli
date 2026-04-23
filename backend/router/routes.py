@@ -1,16 +1,25 @@
+import time
 from datetime import datetime
 from bson import ObjectId
 
 from config import settings
 from database.database import Database
+from llm.openrouter import (
+    OpenRouterConfigurationError,
+    OpenRouterError,
+    build_error_event,
+    stream_chat_completion,
+)
 from log.logger import Logger
-from schema.schema import GetResponseModel, UpdateVisitorStats, UpdateResponseModel
+from schema.schema import ChatRequest, GetResponseModel, UpdateVisitorStats, UpdateResponseModel
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 db = Database()
 custom_logger = Logger(__name__).get_logger()
+chat_request_log = {}
 
 
 def _current_utc_date():
@@ -42,6 +51,34 @@ def _normalize_avg_session_seconds(stats_dict):
 
 def close_database():
     db.close()
+
+
+def _get_client_ip(request: Request):
+    forwarded_for = request.headers.get('x-forwarded-for')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+
+    return request.client.host if request.client else 'unknown'
+
+
+def _enforce_chat_rate_limit(request: Request):
+    client_ip = _get_client_ip(request)
+    now = time.time()
+    cutoff = now - settings.chat_rate_limit_window_seconds
+    recent_requests = [
+        timestamp
+        for timestamp in chat_request_log.get(client_ip, [])
+        if timestamp >= cutoff
+    ]
+
+    if len(recent_requests) >= settings.chat_rate_limit_count:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail='Chat rate limit reached. Please try again later.',
+        )
+
+    recent_requests.append(now)
+    chat_request_log[client_ip] = recent_requests
 
 @router.get("/get-stats", response_model=GetResponseModel)
 async def get_stats():
@@ -91,3 +128,24 @@ async def update_stats(stats: UpdateVisitorStats):
         message="successfully update the document",
         updated_document_count=resp["modified_count"]
     )
+
+
+@router.post('/chat')
+async def chat(request: Request, payload: ChatRequest):
+    _enforce_chat_rate_limit(request)
+
+    async def event_stream():
+        try:
+            async for chunk in stream_chat_completion(payload.message, payload.history):
+                yield chunk
+        except OpenRouterConfigurationError as exc:
+            custom_logger.error(str(exc))
+            yield build_error_event('Chat is currently unavailable. Please try again later or use /contact.')
+        except OpenRouterError as exc:
+            custom_logger.error(str(exc))
+            yield build_error_event('The model is currently unavailable. Please try again shortly.')
+        except Exception as exc:
+            custom_logger.error(f'unexpected chat error: {str(exc)}')
+            yield build_error_event('Unexpected chat error. Please try again later.')
+
+    return StreamingResponse(event_stream(), media_type='text/event-stream')
