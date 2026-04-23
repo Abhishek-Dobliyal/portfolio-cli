@@ -21,11 +21,29 @@ class Settings:
     open_router_key: Optional[str] = os.getenv('OPEN_ROUTER_KEY')
     open_router_url: str = os.getenv('OPEN_ROUTER_URL', 'https://openrouter.ai/api/v1/chat/completions')
     open_router_model: str = os.getenv('OPEN_ROUTER_MODEL', 'google/gemma-4-26b-a4b-it:free')
+    open_router_fallback_models: str = os.getenv(
+        'OPEN_ROUTER_FALLBACK_MODELS',
+        'meta-llama/llama-3.3-70b-instruct:free,mistralai/mistral-small-3.2-24b-instruct:free',
+    )
     app_url: str = os.getenv('APP_URL', 'https://portfolio-cli.netlify.app')
     app_name: str = os.getenv('APP_NAME', 'Portfolio CLI')
     chat_rate_limit_count: int = int(os.getenv('CHAT_RATE_LIMIT_COUNT', '15'))
     chat_rate_limit_window_seconds: int = int(os.getenv('CHAT_RATE_LIMIT_WINDOW_SECONDS', '3600'))
     chat_max_history_messages: int = int(os.getenv('CHAT_MAX_HISTORY_MESSAGES', '8'))
+
+    def get_open_router_models(self):
+        models = [self.open_router_model]
+        fallback_models = [
+            model.strip()
+            for model in self.open_router_fallback_models.split(',')
+            if model.strip()
+        ]
+
+        for model in fallback_models:
+            if model not in models:
+                models.append(model)
+
+        return models
 
     def build_mongo_uri(self):
         required_parts = [
