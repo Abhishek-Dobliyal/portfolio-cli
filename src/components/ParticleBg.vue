@@ -11,6 +11,8 @@ let scene, camera, renderer, particles, glow
 let animationId
 let mouseX = 0, mouseY = 0
 let mode = 'normal' // 'normal' | 'warp' | 'dna'
+const effectTimeoutIds = []
+const effectIntervalIds = []
 
 const particleCount = 60
 
@@ -27,6 +29,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('mousemove', handleMouseMove)
   window.removeEventListener('touchmove', handleTouchMove)
+  effectTimeoutIds.forEach(clearTimeout)
+  effectIntervalIds.forEach(clearInterval)
   if (renderer) renderer.dispose()
 })
 
@@ -186,7 +190,7 @@ function warp() {
   particles.material.opacity = 0.9
   particles.material.size = 3
 
-  setTimeout(() => {
+  const resetTimeoutId = setTimeout(() => {
     vels.forEach(v => { v.x = v._origX; v.y = v._origY; v.z = v._origZ })
     for (let i = 0; i < particleCount; i++) {
       pos[i * 3 + 2] = (Math.random() - 0.5) * 20
@@ -196,6 +200,7 @@ function warp() {
     particles.material.size = 1.5
     mode = 'normal'
   }, 1800)
+  effectTimeoutIds.push(resetTimeoutId)
 }
 
 function dna() {
@@ -230,8 +235,9 @@ function dna() {
     }
     particles.geometry.attributes.position.needsUpdate = true
   }, 16)
+  effectIntervalIds.push(formInterval)
 
-  setTimeout(() => {
+  const spinTimeoutId = setTimeout(() => {
     clearInterval(formInterval)
     let angle = 0
     const spinInterval = setInterval(() => {
@@ -244,8 +250,9 @@ function dna() {
       }
       particles.geometry.attributes.position.needsUpdate = true
     }, 16)
+    effectIntervalIds.push(spinInterval)
 
-    setTimeout(() => {
+    const restoreTimeoutId = setTimeout(() => {
       clearInterval(spinInterval)
       let steps = 0
       const restoreInterval = setInterval(() => {
@@ -264,8 +271,11 @@ function dna() {
           mode = 'normal'
         }
       }, 16)
+      effectIntervalIds.push(restoreInterval)
     }, 2500)
+    effectTimeoutIds.push(restoreTimeoutId)
   }, 1000)
+  effectTimeoutIds.push(spinTimeoutId)
 }
 
 defineExpose({ warp, dna })

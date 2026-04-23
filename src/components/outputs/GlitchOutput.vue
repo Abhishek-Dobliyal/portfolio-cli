@@ -25,6 +25,19 @@ const joke       = ref({ setup: '', delivery: '' })
 const loading    = ref(true)
 
 let interval = null
+let revealTimeout = null
+
+function clearAnimationTimers() {
+    if (interval) {
+        clearInterval(interval)
+        interval = null
+    }
+
+    if (revealTimeout) {
+        clearTimeout(revealTimeout)
+        revealTimeout = null
+    }
+}
 
 function scramble(text) {
     return text.split('').map(ch => {
@@ -41,6 +54,8 @@ function updateBinary() {
 
 async function fetchAndAnimate() {
     loading.value = true
+    clearAnimationTimers()
+
     try {
         const res  = await fetch(JOKE_API)
         const data = await res.json()
@@ -54,16 +69,15 @@ async function fetchAndAnimate() {
         updateBinary()
     }, 100)
 
-    setTimeout(() => {
-        clearInterval(interval)
-        interval = null
+    revealTimeout = setTimeout(() => {
+        clearAnimationTimers()
         glitchText.value = joke.value.setup
         loading.value = false
     }, 1500)
 }
 
 onMounted(fetchAndAnimate)
-onUnmounted(() => { if (interval) clearInterval(interval) })
+onUnmounted(clearAnimationTimers)
 </script>
 
 <style scoped>

@@ -57,7 +57,7 @@
             <span class="text-term-text-dim text-xs">· whoami</span> - Quick
             profile
         </p>
-        <p><span class="text-accent">/glitch</span> - Random glitch</p>
+        <p><span class="text-accent">/glitch</span> - Signal interference</p>
         <p><span class="text-accent">/warp</span> - Warp drive</p>
         <p><span class="text-accent">/dna</span> - DNA helix</p>
     </div>

@@ -129,6 +129,7 @@ import SkillsOutput   from '@/components/outputs/SkillsOutput.vue'
 import ProjectsOutput from '@/components/outputs/ProjectsOutput.vue'
 import ContactOutput  from '@/components/outputs/ContactOutput.vue'
 import LinksOutput    from '@/components/outputs/LinksOutput.vue'
+import ResumeOutput   from '@/components/outputs/ResumeOutput.vue'
 import HelpOutput     from '@/components/outputs/HelpOutput.vue'
 import TimelineOutput from '@/components/outputs/TimelineOutput.vue'
 import WarpOutput     from '@/components/outputs/WarpOutput.vue'
@@ -167,6 +168,7 @@ const outputComponents = {
     projects: ProjectsOutput,
     contact: ContactOutput,
     links: LinksOutput,
+    resume: ResumeOutput,
     help: HelpOutput,
     timeline: TimelineOutput,
     warp: WarpOutput,
@@ -233,12 +235,49 @@ const COMMAND_HANDLERS = {
     '/warp':     () => { particleBgRef.value?.warp(); return { type: 'warp' } },
     '/dna':      () => { particleBgRef.value?.dna();  return { type: 'dna' } },
     '/site':     () => ({ type: 'site' }),
-    '/resume':   () => { window.open(RESUME_URL, '_blank', 'noopener,noreferrer'); return { type: 'links' } },
+    '/resume':   () => { window.open(RESUME_URL, '_blank', 'noopener,noreferrer'); return { type: 'resume' } },
     '/clear':    () => { history.value = []; currentInput.value = ''; return null },
 }
 
 function createVisitorId() {
     return `VIS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+}
+
+function getNormalizedCommand(rawCommand) {
+    const trimmedCommand = rawCommand.trim().toLowerCase()
+    if (!trimmedCommand) return null
+
+    const prefixedCommand = trimmedCommand.startsWith('/')
+        ? trimmedCommand
+        : `/${trimmedCommand}`
+
+    return ALIASES[trimmedCommand] ?? ALIASES[prefixedCommand] ?? prefixedCommand
+}
+
+function updateShareableUrl(command) {
+    const url = new URL(window.location.href)
+
+    if (!command || command === '/clear') {
+        url.searchParams.delete('cmd')
+    } else {
+        url.searchParams.set('cmd', command.replace(/^\//, ''))
+    }
+
+    window.history.replaceState({}, '', url)
+}
+
+function runSharedCommandFromUrl() {
+    const sharedCommand = new URLSearchParams(window.location.search).get('cmd')
+    if (!sharedCommand) return
+
+    const normalizedCommand = getNormalizedCommand(sharedCommand)
+    if (!normalizedCommand || !COMMAND_HANDLERS[normalizedCommand]) {
+        updateShareableUrl(null)
+        return
+    }
+
+    currentInput.value = normalizedCommand
+    executeCommand()
 }
 
 function focusInput() {
@@ -280,6 +319,7 @@ function getOutputProps(entry) {
 
 function handleUnknownSelect(command) {
     currentInput.value = command
+    focusInput()
 }
 
 function getCommandSuggestions(command) {
@@ -296,26 +336,32 @@ function executeCommand() {
     const raw = currentInput.value.trim()
     if (!raw) return
 
+    const normalizedCommand = getNormalizedCommand(raw)
+
     commandHistory.value.push(raw)
     historyIndex.value = -1
 
-    const cmd = ALIASES[raw.toLowerCase()] ?? raw.toLowerCase()
-    const handler = COMMAND_HANDLERS[cmd]
+    const handler = COMMAND_HANDLERS[normalizedCommand]
 
     if (!handler) {
         pushHistoryEntry(raw, 'unknown', getCommandSuggestions(raw))
         currentInput.value = ''
         commandsRun.value++
+        updateShareableUrl(null)
         scrollToBottom()
         return
     }
 
     const result = handler()
-    if (result === null) return
+    if (result === null) {
+        updateShareableUrl(null)
+        return
+    }
 
     commandsRun.value++
     pushHistoryEntry(raw, result.type)
     currentInput.value = ''
+    updateShareableUrl(normalizedCommand)
     scrollToBottom()
 }
 
@@ -353,6 +399,7 @@ onMounted(() => {
     focusInput()
     updateTime()
     clockTimerId = window.setInterval(updateTime, CLOCK_INTERVAL_MS)
+    runSharedCommandFromUrl()
 })
 
 onUnmounted(() => {

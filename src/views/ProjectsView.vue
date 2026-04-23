@@ -49,6 +49,7 @@
                 v-if="project.github" 
                 :href="project.github" 
                 target="_blank"
+                rel="noopener noreferrer"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-re8-text-dim hover:text-re8-candle hover:border-re8-candle transition-all duration-300" style="background-color: #0f1115; border: 1px solid #2a2d35"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -59,6 +60,7 @@
                 v-if="project.demo" 
                 :href="project.demo" 
                 target="_blank"
+                rel="noopener noreferrer"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-re8-text-dim hover:text-re8-candle hover:border-re8-candle transition-all duration-300" style="background-color: #0f1115; border: 1px solid #2a2d35"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,6 +106,7 @@
         <a 
           href="https://github.com/Abhishek-Dobliyal" 
           target="_blank"
+          rel="noopener noreferrer"
           class="re8-button inline-flex items-center gap-2"
         >
           <span>View All on GitHub</span>

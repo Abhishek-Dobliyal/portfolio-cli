@@ -23,7 +23,7 @@
         <div>
             <p class="text-accent text-xs mb-1">// writing</p>
             <p class="text-term-text-muted text-sm">
-                <a :href="BLOG_URL" target="_blank" class="term-link">
+                <a :href="BLOG_URL" target="_blank" rel="noopener noreferrer" class="term-link">
                     From Archival to Access: Config-Driven Data Pipelines
                 </a>
                 <span class="text-term-text-dim"> — Uber Engineering</span>

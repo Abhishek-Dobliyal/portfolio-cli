@@ -133,7 +133,7 @@ export const statsConfig = [
 
 export const availableCommands = [
     '/about', '/skills', '/projects', '/timeline',
-    '/contact', '/links', '/help', '/clear',
+    '/contact', '/links', '/resume', '/help', '/clear',
     '/stats', '/profiles', '/whois', '/glitch', '/warp', '/dna', '/site',
 ]
 
