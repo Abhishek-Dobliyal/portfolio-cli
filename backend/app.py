@@ -4,11 +4,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from router.routes import close_database, router
+from router.routes import close_database, initialize_database, router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    initialize_database()
     yield
     close_database()
 

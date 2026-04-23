@@ -14,14 +14,14 @@ class Database:
 
         self._connect()
 
-    def _is_connected(self):
+    def is_connected(self):
         return self._db is not None
 
     def _get_collection_name(self, collection_name=None):
         return collection_name if collection_name else self.collection_name
 
     def _get_collection(self, collection_name=None):
-        if not self._is_connected():
+        if not self.is_connected():
             self._logger.error("database connection is not available")
             return None
 

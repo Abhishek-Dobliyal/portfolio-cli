@@ -19,9 +19,19 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
 router = APIRouter()
-db = Database()
+db = None
 custom_logger = Logger(__name__).get_logger()
 chat_request_log = {}
+
+
+def initialize_database():
+    global db
+
+    database = Database()
+    db = database if database.is_connected() else None
+
+    if db is None:
+        custom_logger.error('database initialization failed')
 
 
 def _current_utc_date():
@@ -53,7 +63,32 @@ def _normalize_avg_session_seconds(stats_dict):
 
 
 def close_database():
-    db.close()
+    global db
+
+    if db is not None:
+        db.close()
+
+    db = None
+
+
+def _require_database():
+    if db is None:
+        custom_logger.error('database is not available')
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail='Database is currently unavailable.',
+        )
+
+
+def _get_stats_document_id():
+    try:
+        return ObjectId(STATS_DOCUMENT_ID)
+    except Exception as exc:
+        custom_logger.error(f'invalid STATS_DOCUMENT_ID configuration: {str(exc)}')
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Invalid stats document configuration.',
+        )
 
 
 def _get_client_ip(request: Request):
@@ -117,7 +152,9 @@ def _require_allowed_origin(request: Request):
 
 @router.get("/get-stats", response_model=GetResponseModel)
 async def get_stats():
-    stats = _normalize_stats(db.find_one())
+    _require_database()
+    stats_document_id = _get_stats_document_id()
+    stats = _normalize_stats(db.find_one(filter={"_id": stats_document_id}))
 
     if not stats:
         custom_logger.warning("stats document not found")
@@ -136,18 +173,11 @@ async def get_stats():
 @router.post("/update-stats", response_model=UpdateResponseModel)
 async def update_stats(request: Request, stats: UpdateVisitorStats):
     _require_allowed_origin(request)
+    _require_database()
 
     stats_dict = stats.dict()
     stats_dict["avg_session_seconds"] = _normalize_avg_session_seconds(stats_dict)
-
-    try:
-        stats_document_id = ObjectId(STATS_DOCUMENT_ID)
-    except Exception:
-        custom_logger.error("invalid STATS_DOCUMENT_ID configuration")
-        return UpdateResponseModel(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="invalid stats document configuration",
-        )
+    stats_document_id = _get_stats_document_id()
 
     resp = db.update_document(
         {"_id": stats_document_id},
@@ -155,9 +185,9 @@ async def update_stats(request: Request, stats: UpdateVisitorStats):
     )
 
     if not resp:
-        return UpdateResponseModel(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="could not update the document"
+            detail='Could not update the document.',
         )
 
     return UpdateResponseModel(
