@@ -1,10 +1,9 @@
-import time
 from datetime import datetime
 from urllib.parse import urlsplit
 
 from bson import ObjectId
 
-from config import CHAT_RATE_LIMIT_COUNT, CHAT_RATE_LIMIT_WINDOW_SECONDS, STATS_DOCUMENT_ID, settings
+from config import STATS_DOCUMENT_ID, settings
 from database.database import Database
 from llm.openrouter import (
     OpenRouterConfigurationError,
@@ -21,7 +20,6 @@ from fastapi.responses import StreamingResponse
 router = APIRouter()
 db = None
 custom_logger = Logger(__name__).get_logger()
-chat_request_log = {}
 
 
 def initialize_database(raise_on_failure=True):
@@ -106,26 +104,6 @@ def _get_client_ip(request: Request):
     return request.client.host if request.client else 'unknown'
 
 
-def _enforce_chat_rate_limit(request: Request):
-    client_ip = _get_client_ip(request)
-    now = time.time()
-    cutoff = now - CHAT_RATE_LIMIT_WINDOW_SECONDS
-    recent_requests = [
-        timestamp
-        for timestamp in chat_request_log.get(client_ip, [])
-        if timestamp >= cutoff
-    ]
-
-    if len(recent_requests) >= CHAT_RATE_LIMIT_COUNT:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail='Chat rate limit reached. Please try again later.',
-        )
-
-    recent_requests.append(now)
-    chat_request_log[client_ip] = recent_requests
-
-
 def _extract_origin(url):
     if not url:
         return None
@@ -207,7 +185,6 @@ async def update_stats(request: Request, stats: UpdateVisitorStats):
 @router.post('/chat')
 async def chat(request: Request, payload: ChatRequest):
     _require_allowed_origin(request)
-    _enforce_chat_rate_limit(request)
 
     async def event_stream():
         try:
