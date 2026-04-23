@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --term-bg: #0d0d0d;
+  --term-accent: #10b981;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background-color: #0d0d0d;
+  color: #e5e5e5;
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+/* Terminal prompt cursor */
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Terminal output blocks */
+.term-output {
+  padding: 0.75rem 0;
+  border-left: 2px solid #2a2a2a;
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 640px) {
+  .term-output {
+    padding: 1rem 0;
+    padding-left: 1rem;
+  }
+}
+
+.term-output:first-child {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Terminal command input with block cursor */
+.term-input-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.term-input-wrapper .term-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: transparent;
+  caret-color: transparent;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.term-input-mirror {
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 1.2em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.block-cursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1.1em;
+  background: #10b981;
+  vertical-align: text-bottom;
+  animation: blockBlink 1s step-end infinite;
+}
+
+@keyframes blockBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.term-input::placeholder {
+  color: #555555;
+}
+
+/* Terminal buttons */
+.term-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.term-btn-primary {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.term-btn-primary:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.term-btn-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #888888;
+}
+
+.term-btn-secondary:hover {
+  border-color: #3a3a3a;
+  color: #e5e5e5;
+}
+
+/* Terminal cards */
+.term-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.term-card:hover {
+  border-color: #3a3a3a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Terminal link */
+.term-link {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.term-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Prompt color */
+.text-prompt {
+  color: #f59e0b;
+}
+
+.text-accent {
+  color: #10b981;
+}
+
+.text-error {
+  color: #ef4444;
+}
+
+.text-muted {
+  color: #888888;
+}
+
+.text-dim {
+  color: #555555;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar - hidden but functional */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+}
+
+/* Firefox */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Selection */
+::selection {
+  background: rgba(16, 185, 129, 0.3);
+  color: #e5e5e5;
+}
