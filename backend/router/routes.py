@@ -27,8 +27,6 @@ chat_request_log = {}
 def initialize_database(raise_on_failure=True):
     global db
 
-    custom_logger.info(f'initializing database using {settings.get_mongo_config_mode()}')
-
     database = Database()
     db = database if database.is_connected() else None
 
@@ -83,7 +81,6 @@ def _require_database():
         if initialize_database(raise_on_failure=False):
             return
 
-        custom_logger.error('database is not available')
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail='Database is currently unavailable.',

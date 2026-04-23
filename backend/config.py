@@ -41,15 +41,6 @@ class Settings:
         parsed_url = urlsplit(APP_URL)
         return f'{parsed_url.scheme}://{parsed_url.netloc}'
 
-    def get_mongo_config_mode(self):
-        if self.mongo_uri:
-            if all(token in self.mongo_uri for token in ('{username}', '{password}', '{host}', '{options}')):
-                return 'templated_mongo_uri'
-
-            return 'direct_mongo_uri'
-
-        return 'split_mongo_fields'
-
     def build_mongo_uri(self):
         if self.mongo_uri:
             if all(token in self.mongo_uri for token in ('{username}', '{password}', '{host}', '{options}')):
