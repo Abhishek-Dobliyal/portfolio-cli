@@ -4,16 +4,14 @@ import logging
 class Logger:
     DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-    def __init__(self, name, log_file=None, 
-                level=logging.DEBUG,
-                log_format=None):
+    def __init__(self, name, log_file=None, level=logging.DEBUG, log_format=None):
         self.name = name
         self.log_file = log_file
         self.level = level
         self.log_format = log_format if log_format else Logger.DEFAULT_LOG_FORMAT
-    
+
     def get_logger(self):
-        """ Instantiates and returns the custom logger """
+        """Instantiate and return the custom logger."""
         logger = logging.getLogger(self.name)
         logger.setLevel(self.level)
         logger.propagate = False

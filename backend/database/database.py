@@ -28,12 +28,12 @@ class Database:
         return self._db[self._get_collection_name(collection_name)]
 
     def _connect(self):
-        """ Connects to MongoDB  """
+        """Connect to MongoDB."""
         if not self.mongo_uri:
             self._logger.error("missing MongoDB configuration in environment")
             return
 
-        try:            
+        try:
             self._client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
             self._client.admin.command('ping')
             self._db = self._client[self.database_name]
@@ -48,20 +48,20 @@ class Database:
             self._db = None
 
     def find_one(self, collection_name=None, **query):
-        """ Finds documents in the collection based on a query. """
+        """Find documents in the collection based on a query."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return None
 
-        try: 
+        try:
             document = collection.find_one(**query)
             return document
         except Exception as e:
-            self._logger.error(f"An error occurred while finding documents: {str(e)}")
+            self._logger.error(f"an error occurred while finding documents: {str(e)}")
             return None
 
     def insert_document(self, document, collection_name=None):
-        """ Inserts a document into the collection. """
+        """Insert a document into the collection."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return None
@@ -74,10 +74,8 @@ class Database:
             self._logger.error(f"error occurred while inserting document: {str(e)}")
             return None
 
-    def update_document(self, query, update, 
-                        collection_name=None, 
-                        multiple=False):
-        """ Updates documents in the collection based on a query. """
+    def update_document(self, query, update, collection_name=None, multiple=False):
+        """Update documents in the collection based on a query."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return None
@@ -96,7 +94,7 @@ class Database:
             return None
 
     def close(self):
-        """ Closes the MongoDB connection."""
+        """Close the MongoDB connection."""
         if self._client:
             self._client.close()
             self._logger.info("connection to database closed")

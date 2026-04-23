@@ -92,7 +92,7 @@ async def stream_chat_completion(message, history):
                 async for chunk in _stream_model_completion(client, headers, payload):
                     yield chunk
                 return
-            except OpenRouterRateLimitError as exc:
+            except OpenRouterError as exc:
                 last_error = exc
                 continue
 

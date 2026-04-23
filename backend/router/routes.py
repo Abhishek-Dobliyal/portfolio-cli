@@ -44,6 +44,7 @@ def _normalize_stats(stats):
 def _normalize_avg_session_seconds(stats_dict):
     avg_session_sec = stats_dict.get("avg_session_seconds", 0)
     if avg_session_sec >= 100:
+        # Older clients reported session duration in a doubled unit.
         return avg_session_sec / 2
 
     return avg_session_sec
@@ -79,6 +80,7 @@ def _enforce_chat_rate_limit(request: Request):
 
     recent_requests.append(now)
     chat_request_log[client_ip] = recent_requests
+
 
 @router.get("/get-stats", response_model=GetResponseModel)
 async def get_stats():
@@ -125,7 +127,7 @@ async def update_stats(stats: UpdateVisitorStats):
 
     return UpdateResponseModel(
         status_code=status.HTTP_200_OK,
-        message="successfully update the document",
+        message="successfully updated the document",
         updated_document_count=resp["modified_count"]
     )
 
