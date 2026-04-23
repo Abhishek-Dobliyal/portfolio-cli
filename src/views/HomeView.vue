@@ -57,16 +57,26 @@
             <div class="term-input-line flex items-start gap-2 mt-4 mb-2">
                 <span class="text-prompt">$</span>
                 <div class="term-input-wrapper flex-1 relative">
-                    <span class="term-input-mirror text-term-text" aria-hidden="true">{{ currentInput }}<span class="block-cursor"></span><span v-if="!currentInput" class="text-term-text-dim">Type a command...</span></span>
+                    <span class="term-input-mirror text-term-text" aria-hidden="true">
+                        <template v-if="currentInput">
+                            {{ inputBeforeCursor }}<span class="block-cursor"></span>{{ inputAfterCursor }}
+                        </template>
+                        <template v-else>
+                            <span class="block-cursor"></span><span class="text-term-text-dim">Type a command...</span>
+                        </template>
+                    </span>
                     <input
                         ref="inputRef"
                         :value="currentInput"
                         type="text"
                         class="term-input"
                         placeholder=" "
-                        @input="currentInput = $event.target.value"
-                        @compositionupdate="currentInput = $event.target.value"
+                        @input="handleInput"
+                        @compositionupdate="handleInput"
                         @focus="emptyHint = false"
+                        @click="syncCursorPosition"
+                        @keyup="syncCursorPosition"
+                        @select="syncCursorPosition"
                         @keydown.enter="executeCommand"
                         @keydown.up.prevent="navigateHistory(-1)"
                         @keydown.down.prevent="navigateHistory(1)"
@@ -140,6 +150,7 @@ const particleBgRef  = ref(null)
 const inputRef       = ref(null)
 const terminalBody   = ref(null)
 const currentInput   = ref('')
+const cursorIndex    = ref(0)
 const history        = ref([])
 const historyIndex   = ref(-1)
 const commandHistory = ref([])
@@ -213,6 +224,9 @@ const cmdSuggestions = computed(() => {
         .filter(c => c.toLowerCase().startsWith(input.toLowerCase()))
         .slice(0, MAX_SUGGESTIONS)
 })
+
+const inputBeforeCursor = computed(() => currentInput.value.slice(0, cursorIndex.value))
+const inputAfterCursor = computed(() => currentInput.value.slice(cursorIndex.value))
 
 const COMMAND_HANDLERS = {
     '/about':    () => ({ type: 'about' }),
@@ -309,6 +323,15 @@ function focusInput() {
     nextTick(() => inputRef.value?.focus())
 }
 
+function syncCursorPosition() {
+    cursorIndex.value = inputRef.value?.selectionStart ?? currentInput.value.length
+}
+
+function handleInput(event) {
+    currentInput.value = event.target.value
+    cursorIndex.value = event.target.selectionStart ?? currentInput.value.length
+}
+
 function updateTime() {
     currentTime.value = new Date().toLocaleTimeString('en-US', {
         hour: '2-digit', minute: '2-digit', hour12: false,
@@ -353,6 +376,7 @@ function getOutputProps(entry) {
 
 function handleUnknownSelect(command) {
     currentInput.value = command
+    cursorIndex.value = command.length
     focusInput()
 }
 
@@ -443,6 +467,7 @@ async function streamChatReply(entry, priorHistory) {
 
             for (const eventBlock of eventBlocks) {
                 const shouldStop = processChatEvent(eventBlock, entry)
+                await nextTick()
                 if (shouldStop) {
                     if (entry.status !== 'error') {
                         entry.status = 'done'
@@ -454,6 +479,7 @@ async function streamChatReply(entry, priorHistory) {
             }
 
             scrollToBottom('auto')
+            await new Promise(resolve => window.requestAnimationFrame(resolve))
         }
 
         if (buffer.trim()) {
@@ -463,6 +489,8 @@ async function streamChatReply(entry, priorHistory) {
         if (entry.status !== 'error') {
             entry.status = 'done'
         }
+
+        await nextTick()
     } catch (error) {
         entry.status = 'error'
         entry.error = 'Chat is unavailable right now. Try again shortly or use /contact.'
@@ -504,6 +532,7 @@ function executeCommand() {
     commandsRun.value++
     pushHistoryEntry(raw, result)
     currentInput.value = ''
+    cursorIndex.value = 0
     updateShareableUrl(normalizedCommand === '/chat' ? null : normalizedCommand)
     scrollToBottom()
 }
@@ -525,9 +554,11 @@ function navigateHistory(direction) {
     if (newIndex < 0) {
         historyIndex.value = -1
         currentInput.value = ''
+        cursorIndex.value = 0
     } else if (newIndex < commandHistory.value.length) {
         historyIndex.value = newIndex
         currentInput.value = commandHistory.value[commandHistory.value.length - 1 - newIndex]
+        cursorIndex.value = currentInput.value.length
     }
 }
 
@@ -535,7 +566,10 @@ function handleTabComplete() {
     const input = currentInput.value.toLowerCase()
     if (!input) return
     const match = availableCommands.find(cmd => cmd.startsWith(input))
-    if (match) currentInput.value = match
+    if (match) {
+        currentInput.value = match
+        cursorIndex.value = match.length
+    }
 }
 
 onMounted(() => {
