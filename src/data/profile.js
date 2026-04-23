@@ -1,6 +1,9 @@
 export const RESUME_URL =
     'https://drive.google.com/file/d/1h1MEm_h5jmMzcSxRpa4lmwktLdaww2wD/view'
 
+export const BLOG_URL =
+    'https://www.uber.com/gb/en/blog/from-archival-to-access/'
+
 export const profile = {
     intro: 'Backend and data engineer at Uber, currently based in Amsterdam. I build systems that move and process data at scale — pipelines, APIs, and the unglamorous-but-critical plumbing that keeps things running. I pick up new tech stacks out of curiosity and have a habit of turning that curiosity into side projects.',
     company: 'Uber',

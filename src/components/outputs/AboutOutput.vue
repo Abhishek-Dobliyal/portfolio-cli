@@ -19,9 +19,19 @@
             <p class="text-accent text-xs mb-1">// outside the terminal</p>
             <p class="text-term-text-muted text-sm">{{ profile.hobbies }}</p>
         </div>
+
+        <div>
+            <p class="text-accent text-xs mb-1">// writing</p>
+            <p class="text-term-text-muted text-sm">
+                <a :href="BLOG_URL" target="_blank" class="term-link">
+                    From Archival to Access: Config-Driven Data Pipelines
+                </a>
+                <span class="text-term-text-dim"> — Uber Engineering</span>
+            </p>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { profile } from '@/data/profile.js'
+import { BLOG_URL, profile } from '@/data/profile.js'
 </script>
