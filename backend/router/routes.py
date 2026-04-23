@@ -24,7 +24,7 @@ custom_logger = Logger(__name__).get_logger()
 chat_request_log = {}
 
 
-def initialize_database():
+def initialize_database(raise_on_failure=True):
     global db
 
     custom_logger.info(f'initializing database using {settings.get_mongo_config_mode()}')
@@ -34,7 +34,11 @@ def initialize_database():
 
     if db is None:
         custom_logger.error('database initialization failed')
-        raise RuntimeError('database initialization failed')
+        if raise_on_failure:
+            raise RuntimeError('database initialization failed')
+        return False
+
+    return True
 
 
 def _current_utc_date():
@@ -76,6 +80,9 @@ def close_database():
 
 def _require_database():
     if db is None:
+        if initialize_database(raise_on_failure=False):
+            return
+
         custom_logger.error('database is not available')
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
