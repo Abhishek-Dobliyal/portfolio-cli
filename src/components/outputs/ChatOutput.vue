@@ -10,6 +10,7 @@
         </div>
 
         <div v-else class="space-y-2">
+            <p class="text-term-text-dim text-xs">Response can take a moment because this runs on a free-tier model.</p>
             <div
                 v-if="displayedResponse"
                 class="chat-markdown text-term-text break-words"

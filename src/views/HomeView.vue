@@ -121,36 +121,37 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-
-import ParticleBg     from '@/components/ParticleBg.vue'
-import Typewriter     from '@/components/Typewriter.vue'
-import AboutOutput    from '@/components/outputs/AboutOutput.vue'
-import SkillsOutput   from '@/components/outputs/SkillsOutput.vue'
-import ProjectsOutput from '@/components/outputs/ProjectsOutput.vue'
-import ContactOutput  from '@/components/outputs/ContactOutput.vue'
-import LinksOutput    from '@/components/outputs/LinksOutput.vue'
-import ResumeOutput   from '@/components/outputs/ResumeOutput.vue'
-import HelpOutput     from '@/components/outputs/HelpOutput.vue'
-import TimelineOutput from '@/components/outputs/TimelineOutput.vue'
-import WarpOutput     from '@/components/outputs/WarpOutput.vue'
-import DnaOutput      from '@/components/outputs/DnaOutput.vue'
-import GlitchOutput   from '@/components/outputs/GlitchOutput.vue'
-import StatsOutput    from '@/components/outputs/StatsOutput.vue'
-import ProfilesOutput from '@/components/outputs/ProfilesOutput.vue'
-import SiteOutput     from '@/components/outputs/SiteOutput.vue'
-import ChatOutput     from '@/components/outputs/ChatOutput.vue'
-import WhoisOutput    from '@/components/outputs/WhoisOutput.vue'
-import UnknownOutput  from '@/components/outputs/UnknownOutput.vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 
 import { availableCommands, ALIASES, RESUME_URL } from '@/data/profile.js'
 import { useSiteStats } from '@/composables/useSiteStats.js'
+
+const ParticleBg = defineAsyncComponent(() => import('@/components/ParticleBg.vue'))
+const Typewriter = defineAsyncComponent(() => import('@/components/Typewriter.vue'))
+const AboutOutput = defineAsyncComponent(() => import('@/components/outputs/AboutOutput.vue'))
+const SkillsOutput = defineAsyncComponent(() => import('@/components/outputs/SkillsOutput.vue'))
+const ProjectsOutput = defineAsyncComponent(() => import('@/components/outputs/ProjectsOutput.vue'))
+const ContactOutput = defineAsyncComponent(() => import('@/components/outputs/ContactOutput.vue'))
+const LinksOutput = defineAsyncComponent(() => import('@/components/outputs/LinksOutput.vue'))
+const ResumeOutput = defineAsyncComponent(() => import('@/components/outputs/ResumeOutput.vue'))
+const HelpOutput = defineAsyncComponent(() => import('@/components/outputs/HelpOutput.vue'))
+const TimelineOutput = defineAsyncComponent(() => import('@/components/outputs/TimelineOutput.vue'))
+const WarpOutput = defineAsyncComponent(() => import('@/components/outputs/WarpOutput.vue'))
+const DnaOutput = defineAsyncComponent(() => import('@/components/outputs/DnaOutput.vue'))
+const GlitchOutput = defineAsyncComponent(() => import('@/components/outputs/GlitchOutput.vue'))
+const StatsOutput = defineAsyncComponent(() => import('@/components/outputs/StatsOutput.vue'))
+const ProfilesOutput = defineAsyncComponent(() => import('@/components/outputs/ProfilesOutput.vue'))
+const SiteOutput = defineAsyncComponent(() => import('@/components/outputs/SiteOutput.vue'))
+const ChatOutput = defineAsyncComponent(() => import('@/components/outputs/ChatOutput.vue'))
+const WhoisOutput = defineAsyncComponent(() => import('@/components/outputs/WhoisOutput.vue'))
+const UnknownOutput = defineAsyncComponent(() => import('@/components/outputs/UnknownOutput.vue'))
 
 const particleBgRef  = ref(null)
 const inputRef       = ref(null)
 const terminalBody   = ref(null)
 const currentInput   = ref('')
 const cursorIndex    = ref(0)
+const chatStreaming  = ref(false)
 const history        = ref([])
 const historyIndex   = ref(-1)
 const commandHistory = ref([])
@@ -246,6 +247,17 @@ const COMMAND_HANDLERS = {
     '/chat':     (args) => {
         if (!args) {
             return { type: 'chat', mode: 'usage', status: 'idle', response: '', error: '' }
+        }
+
+        if (chatStreaming.value) {
+            return {
+                type: 'chat',
+                mode: 'stream',
+                prompt: args,
+                response: '',
+                status: 'error',
+                error: 'Another chat response is still streaming. Please wait for it to finish.',
+            }
         }
 
         const entry = {
@@ -435,6 +447,8 @@ function processChatEvent(eventBlock, entry) {
 }
 
 async function streamChatReply(entry, priorHistory) {
+    chatStreaming.value = true
+
     try {
         const response = await fetch(CHAT_URL, {
             method: 'POST',
@@ -496,6 +510,7 @@ async function streamChatReply(entry, priorHistory) {
         entry.error = 'Chat is unavailable right now. Try again shortly or use /contact.'
         console.warn('[chat] request failed:', error)
     } finally {
+        chatStreaming.value = false
         scrollToBottom('auto')
     }
 }
