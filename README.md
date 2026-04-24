@@ -1,23 +1,42 @@
 # portfolio-cli
 
-A terminal-style personal portfolio built with Vue 3 and Vite. The app presents portfolio content through interactive CLI commands, animated visual effects, live profile stats, and site analytics.
+A terminal-style personal portfolio for Abhishek Dobliyal. The frontend is built with Vue 3 and Vite, and the backend provides live site stats plus a portfolio-scoped chat assistant backed by OpenRouter.
 
 ## Features
 
-- Terminal-inspired portfolio interface
+- Terminal-inspired portfolio UI
 - Command-driven navigation with aliases and suggestions
-- Animated particle background and visual easter eggs
+- Animated particle background and CLI easter eggs
 - Live GitHub, LeetCode, and Chess.com profile stats
-- Site statistics backed by a lightweight external API
+- Site analytics persisted through a FastAPI + MongoDB backend
+- Portfolio-only AI chat assistant with streamed responses
 - Responsive layout for desktop and mobile
 
 ## Tech Stack
 
+### Frontend
+
 - Vue 3
 - Vite
-- Vue Router
 - Tailwind CSS
 - Three.js
+
+### Backend
+
+- FastAPI
+- MongoDB
+- PyMongo
+- HTTPX
+- OpenRouter
+
+## Project Structure
+
+```text
+.
+|-- src/        # Vue frontend
+|-- public/     # static assets
+|-- backend/    # FastAPI backend
+```
 
 ## Getting Started
 
@@ -25,34 +44,51 @@ A terminal-style personal portfolio built with Vue 3 and Vite. The app presents 
 
 - Node.js 18+
 - npm
+- Python 3.10+
+- `uv` or `pip`
+- MongoDB connection details
+- OpenRouter API key
 
-### Install
+### Frontend Setup
 
 ```bash
 npm install
-```
-
-### Run Locally
-
-```bash
 npm run dev
 ```
 
-### Build for Production
+### Backend Setup
+
+From `backend/`:
 
 ```bash
-npm run build
+uv venv
+uv pip install -r requirements.txt
 ```
 
-### Preview the Production Build
+Create `backend/.env` from `backend/.env.example` and set:
+
+- `MONGO_URI`
+
+Or use the split Mongo settings:
+
+- `MONGO_USERNAME`
+- `MONGO_PASSWORD`
+- `MONGO_HOST`
+- `MONGO_OPTIONS`
+
+Also set:
+
+- `OPEN_ROUTER_KEY`
+
+Then run the backend from `backend/`:
 
 ```bash
-npm run preview
+uv run uvicorn app:app --reload
 ```
 
 ## Available Commands
 
-The portfolio UI includes commands such as:
+Core commands:
 
 - `/about`
 - `/skills`
@@ -61,24 +97,59 @@ The portfolio UI includes commands such as:
 - `/stats`
 - `/profiles`
 - `/site`
+- `/chat <question>`
 - `/contact`
 - `/links`
+- `/resume`
 - `/help`
+- `/clear`
 
-Some commands also support shortcuts and aliases inside the app.
+Notes:
+
+- `/chat` is portfolio-scoped and is not intended to behave like a general chatbot
+- `/chat` responses may be slower on free-tier models
+- some commands also support shortcuts and aliases inside the app
+
+## Production Build
+
+Frontend:
+
+```bash
+npm run build
+npm run preview
+```
+
+Backend:
+
+Run with your preferred ASGI process manager in `backend/`, for example:
+
+```bash
+uv run uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
 ## Deployment
 
-This project can be deployed directly to Netlify.
+### Frontend
 
-Recommended Netlify settings:
+Deploy the frontend to Netlify.
+
+Recommended settings:
 
 - Build command: `npm run build`
 - Publish directory: `dist`
 
-If deploying to a subpath instead of the site root, update the Vite `base` setting in `vite.config.js`.
+### Backend
+
+Deploy the FastAPI backend separately.
+
+Current backend behavior:
+
+- `/chat` and `/update-stats` are locked to the deployed portfolio origin
+- chat uses OpenRouter through the backend so the API key stays server-side
+- MongoDB is used for portfolio stats persistence
 
 ## Notes
 
-- `node_modules/` and `dist/` are intentionally excluded from version control
-- Site stats depend on the external backend configured in `src/composables/useSiteStats.js`
+- `node_modules/`, `dist/`, and Python virtual environments are excluded from version control
+- OpenRouter API keys expire yearly and should be rotated
+- Local frontend calls to the deployed backend will be blocked by CORS unless the backend explicitly allows your local origin
