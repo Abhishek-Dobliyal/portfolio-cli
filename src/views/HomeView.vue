@@ -160,6 +160,7 @@ const currentTime    = ref('')
 const emptyHint      = ref(true)
 const MAX_SUGGESTIONS = 3
 const CLOCK_INTERVAL_MS = 1000
+const CHAT_CONNECT_TIMEOUT_MS = 5000
 const CHAT_URL = 'https://portfolio-backend.koyeb.app/chat'
 let clockTimerId = null
 
@@ -448,16 +449,20 @@ function processChatEvent(eventBlock, entry) {
 
 async function streamChatReply(entry, priorHistory) {
     chatStreaming.value = true
+    const controller = new AbortController()
+    const connectTimeoutId = window.setTimeout(() => controller.abort(), CHAT_CONNECT_TIMEOUT_MS)
 
     try {
         const response = await fetch(CHAT_URL, {
             method: 'POST',
+            signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: entry.prompt,
                 history: priorHistory,
             }),
         })
+        clearTimeout(connectTimeoutId)
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`)
@@ -507,9 +512,12 @@ async function streamChatReply(entry, priorHistory) {
         await nextTick()
     } catch (error) {
         entry.status = 'error'
-        entry.error = 'Chat is unavailable right now. Try again shortly or use /contact.'
+        entry.error = error.name === 'AbortError'
+            ? 'Chat connection timed out. Please try again shortly.'
+            : 'Chat is unavailable right now. Try again shortly or use /contact.'
         console.warn('[chat] request failed:', error)
     } finally {
+        clearTimeout(connectTimeoutId)
         chatStreaming.value = false
         scrollToBottom('auto')
     }
