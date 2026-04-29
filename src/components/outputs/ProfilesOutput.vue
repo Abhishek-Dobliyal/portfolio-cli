@@ -31,7 +31,7 @@
                     <div class="text-xl font-bold text-accent">
                         {{ data.leetcode.topPercent }}
                     </div>
-                    <div class="text-term-text-dim text-xs">Top %</div>
+                    <div class="text-term-text-dim text-xs">Top%</div>
                 </div>
             </div>
             <div v-if="errors.leetcode" class="text-term-text-dim text-xs">
@@ -160,7 +160,7 @@ function formatContestRating(rating) {
 
 function formatTopPercentage(topPercentage) {
     return Number.isFinite(topPercentage)
-        ? `Top ${topPercentage}%`
+        ? `${topPercentage}%`
         : FALLBACKS.leetcode.topPercent
 }
 

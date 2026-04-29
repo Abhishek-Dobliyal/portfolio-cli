@@ -1,8 +1,10 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const GET_URL    = 'https://portfolio-backend.koyeb.app/get-stats'
-const UPDATE_URL = 'https://portfolio-backend.koyeb.app/update-stats'
+const GET_URL      = 'https://portfolio-backend.koyeb.app/get-stats'
+const UPDATE_URL  = 'https://portfolio-backend.koyeb.app/update-stats'
 const TIMEOUT_MS = 8000
+const POLL_INTERVAL_MS = 25000
+
 const SITE_STATUS = Object.freeze({
     loading: 'loading',
     ready: 'ready',
@@ -15,6 +17,7 @@ export function useSiteStats() {
     const sessionStart = Date.now()
     const todayKey     = new Date().toISOString().slice(0, 10)
     let updateSent = false
+    let pollTimerId = null
 
     const todayCount = computed(() => {
         if (!rawStats.value) return 0
@@ -86,6 +89,24 @@ export function useSiteStats() {
         if (document.visibilityState === 'hidden') postUpdate()
     }
 
+    function startPolling() {
+        if (pollTimerId) return
+        pollTimerId = setInterval(() => {
+            if (status.value === SITE_STATUS.asleep) {
+                init()
+            } else {
+                stopPolling()
+            }
+        }, POLL_INTERVAL_MS)
+    }
+
+    function stopPolling() {
+        if (pollTimerId) {
+            clearInterval(pollTimerId)
+            pollTimerId = null
+        }
+    }
+
     async function init() {
         const controller = new AbortController()
         const timerId = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -111,11 +132,13 @@ export function useSiteStats() {
 
     onMounted(() => {
         init()
+        startPolling()
         window.addEventListener('beforeunload', postUpdate)
         document.addEventListener('visibilitychange', onVisibilityChange)
     })
 
     onUnmounted(() => {
+        stopPolling()
         window.removeEventListener('beforeunload', postUpdate)
         document.removeEventListener('visibilitychange', onVisibilityChange)
     })
